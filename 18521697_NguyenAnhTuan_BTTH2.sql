@@ -1,94 +1,233 @@
--- QLBH:
+﻿--  QLBH:
+--  I. Ngôn ngữ định nghĩa dữ liệu (Data Definition Language): --
 
--- Phan I: --
+--  2. Thêm vào thuộc tính GHICHU có kiểu dữ liệu varchar(20) cho quan hệ SANPHAM
+alter table
+  SANPHAM
+add
+  GHICHU varchar(20);
 
--- Cau 2.
-alter table SanPham add GhiChu varchar(20);
+--  3. Thêm vào thuộc tính LOAIKH có kiểu dữ liệu là tinyint cho quan hệ KHACHHANG.
+alter table
+  KHACHHANG
+add
+  LOAIKH tinyint;
 
--- Cau 3
-alter table KhachHang add LoaiKH tinyint;
+--  4. Sửa kiểu dữ liệu của thuộc tính GHICHU trong quan hệ SANPHAM thành varchar(100).
+alter table
+  SANPHAM alter column GHICHU varchar(100);
 
--- Cau 4
-alter table SanPham alter column GhiChu varchar(100);
+--  5. Xóa thuộc tính GHICHU trong quan hệ SANPHAM.
+alter table
+  SANPHAM
+drop
+  column GHICHU;
 
--- Cau 5
-alter table SanPham drop column GhiChu;
+--  6. Làm thế nào để thuộc tính LOAIKH trong quan hệ KHACHHANG có thể lưu các giá trị là: “Vang lai”, “Thuong xuyen”, “Vip”, …
+alter table
+  KHACHHANG alter column LOAIKH varchar(255);
 
--- Cau 6
-alter table KhachHang alter column LoaiKH text;
+--  7. Đơn vị tính của sản phẩm chỉ có thể là (“cay”,”hop”,”cai”,”quyen”,”chuc”)
+alter table
+  SANPHAM
+add
+  constraint check_product_unit check (
+    dvt in (
+      'cay', 'hop', 'cai', 'quyen', 'chuc'
+    )
+  );
 
--- Cau 7:
-alter table SanPham add constraint check_product_unit check (dvt in ('cay','hop','cai','quyen','chuc'));
+--  8. Giá bán của sản phẩm từ 500 đồng trở lên.
+alter table
+  SanPham
+add
+  constraint check_product_price check (gia > 500);
 
--- Cau 8
-alter table SanPham add constraint check_product_price check (gia > 500);
+--  9. Mỗi lần mua hàng, khách hàng phải mua ít nhất 1 sản phẩm.
+alter table
+  CTHD
+add
+  constraint check_product_amount check (sl >= 1);
 
--- Cau 9
-alter table CTHD add constraint check_product_amount check (sl >= 1);
+--  10. Ngày khách hàng đăng ký là khách hàng thành viên phải lớn hơn ngày sinh của người đó.
+alter table
+  KhachHang
+add
+  constraint check_register_membership_date check (NgDK > NgSinh);
 
--- Cau 10
-alter table KhachHang add constraint check_register_membership_date check (NgayDK > NgSinh);
+--  II. Ngôn ngữ thao tác dữ liệu (Data Manipulation Language):
 
--- Phan 2
+--  2.1 Tạo quan hệ SANPHAM1 chứa toàn bộ dữ liệu của quan hệ SANPHAM.
+select
+  * into SANPHAM1
+from
+  SanPham;
+--  2.2  Tạo quan hệ KHACHHANG1 chứa toàn bộ dữ liệu của quan hệ KHACHHANG
+select
+  * into KHACHHANG1
+from
+  KhachHang;
+--  3. Cập nhật giá tăng 5% đối với những sản phẩm do “Thai Lan” sản xuất (cho quan hệ SANPHAM1)
+update
+  SANPHAM1
+set
+  gia = gia * 0.05 + gia
+where
+  NuocSX = 'Thai Lan'
+--  4. Cập nhật giá giảm 5% đối với những sản phẩm do “Trung Quoc” sản xuất có giá từ 10.000 trở xuống (cho quan hệ SANPHAM1).
+update
+  SANPHAM1
+set
+  gia = gia - (gia * 0.05)
+where
+  NuocSX = 'Trung Quoc'
+  and gia < 10000;
 
--- Cau 2.1
-select * into SanPham1 from SanPham;
+  /*
+    5. Cập nhật giá trị LOAIKH là “Vip” đối với những khách hàng đăng ký thành viên trước
+      ngày 1/1/2007 có doanh số từ 10.000.000 trở lên hoặc khách hàng đăng ký thành viên từ
+      1/1/2007 trở về sau có doanh số từ 2.000.000 trở lên (cho quan hệ KHACHHANG1).
+  */
+update
+  KhachHang1
+set
+  LOAIKH = 'Vip'
+where
+  (
+    NgDK < convert(smalldatetime, '1/1/2007', 103)
+    and DoanhSo > 10000000
+  )
+  or (
+    NgDK >= convert(smalldatetime, '1/1/2007', 103)
+    and DoanhSo > 2000000
+  );
+--  III. Ngôn ngữ truy vấn dữ liệu:
 
--- Cau 2.2
-select * into KhachHang1 from KhachHang;
+--  1. In ra danh sách các sản phẩm (MASP,TENSP) do “Trung Quoc” sản xuất.
+select
+  MaSP,
+  TenSP
+from
+  SanPham
+where
+  NuocSX = 'Trung Quoc';
 
--- Cau 3
-update table SanPham1 set gia = gia * 0.05 + gia
-where NuocSX = 'Thai Lan'
+--  2. In ra danh sách các sản phẩm (MASP, TENSP) có đơn vị tính là “cay”, ”quyen”.
+select
+  MaSP,
+  TenSP
+from
+  SanPham
+where
+  DVT in ('cay', 'quyen');
 
--- Cau 4
-update table SanPham1 set gia = gia - (gia * 0.05)
-where NuocSX = 'Trung Quoc' and gia < 10000
+--  3. In ra danh sách các sản phẩm (MASP,TENSP) có mã sản phẩm bắt đầu là “B” và kết thúc là “01”.
+select
+  MaSP,
+  TenSP
+from
+  SanPham
+where
+  MaSP like 'B%'
+  and MaSP like '%01';
 
--- Cau 5.1
-update table KhachHang1 set LoaiKH = 'Vip' where
-(NgayDK < '1/1/2007' and DoanhSo > 10000000) or (NgayDK >= '1/1/2007' and DoanhSo > 2000000 );
+--  4. In ra danh sách các sản phẩm (MASP,TENSP) do “Trung Quốc” sản xuất có giá từ 30.000 đến 40.000.
+select
+  MaSP,
+  TenSP
+from
+  SanPham
+where
+  NuocSX = 'Trung Quoc'
+  and (
+    (Gia >= 30000)
+    and (Gia < 40000)
+  );
 
--- Phan 3
+--  5. In ra danh sách các sản phẩm (MASP,TENSP) do “Trung Quoc” hoặc “Thai Lan” sản xuất có giá từ 30.000 đến 40.000.
+select
+  MaSP,
+  TenSP
+from
+  SanPham
+where
+  (
+    NuocSX = 'Trung Quoc'
+    or NuocSX = 'Thai Lan'
+  )
+  and (
+    (Gia >= 30000)
+    and (Gia < 40000)
+  );
+--  6. In ra các số hóa đơn, trị giá hóa đơn bán ra trong ngày 1/1/2007 và ngày 2/1/2007.
+select
+  hd.SOHD,
+  hd.TRIGIA
+from
+  QLBH_2020.dbo.HOADON AS hd
+where
+ hd.NGHD BETWEEN '2007-01-01' AND '2007-01-02'
 
--- Cau 1
-select MaSP, TenSP from SanPham where NuocSX = 'Trung Quoc';
+--  7. In ra các số hóa đơn, trị giá hóa đơn trong tháng 1/2007, sắp xếp theo ngày (tăng dần) và trị giá của hóa đơn (giảm dần).
+select
+  hd.SoHD,
+  hd.TriGia
+from
+  HoaDon as hd
+where
+	MONTH(hd.NGHD) = 1 AND YEAR(HD.NGHD) = 2007
+order by
+  hd.NGHD asc,
+  hd.TRIGIA desc;
 
--- Cau 2
-select MaSP, TenSP from SanPham where DVT in ('cay', 'quyen');
+--  8. In ra danh sách các khách hàng (MAKH, HOTEN) đã mua hàng trong ngày 1/1/2007
+select
+  hd.MaKH,
+  kh.HoTen
+from
+  HoaDon hd
+  join KhachHang kh on kh.MaKH = hd.MaKH
+WHERE
+  hd.NGHD = '2007-01-01'
 
--- Cau 3
-select MaSP, TenSP from SanPham where MaSP like 'B%' and MaSP like '%01';
+--  9. In ra số hóa đơn, trị giá các hóa đơn do nhân viên có tên “Nguyen Van B” lập trong ngày 28/10/2006.
+select
+  hd.SOHD,
+  hd.TRIGIA
+from
+  QLBH_2020.dbo.HOADON hd
+  join QLBH_2020.dbo.NHANVIEN nv on nv.MaNV = hd.MaNV
+where
+  nv.HOTEN = 'Nguyen Van B'
+  AND hd.NGHD = '2006-10-28'
 
--- Cau 4
-select MaSP, TenSP from SanPham where NuocSX = 'Trung Quoc' and ((Gia >= 30000) and (Gia < 40000));
+--  10. In ra danh sách các sản phẩm (MASP,TENSP) được khách hàng có tên “Nguyen Van A” mua trong tháng 10/2006.
+select
+  c.MaSP,
+  sp.TenSp
+from
+  HoaDon hd
+  join CTHD c on c.SoHD = hd.SoHD
+  join SanPham sp on sp.MaSP = c.MaSP
+  join KhachHang kh on kh.MaKH = hd.MaKH
+where
+  kh.HoTen = 'Nguyen Van A'
+  and (
+    MONTH(hd.NGHD) = 10
+    and YEAR(hd.NGHD) = 2006
+  );
 
--- Cau 5
-select MaSP, TenSP from SanPham where (NuocSX = 'Trung Quoc' or NuocSX = 'Thai Lan') and ((Gia >= 30000) and (Gia < 40000));
+--  11. Tìm các số hóa đơn đã mua sản phẩm có mã số “BB01” hoặc “BB02”
+select
+  hd.SoHD
+from
+  HoaDon hd
+  join CTHD c on c.SoHD = hd.SoHD
+  join SanPham sp on sp.MASP = c.MASP
+where
+  sp.MaSP in ('BB01', 'BB02');
 
--- Cau 6
-select SoHD, TriGia from HoaDon where NgHD >= '1/1/2007' and NgHD <= '2/1/2007';
-
--- Cau 7
-select SoHD, TriGia from HoaDon where (NgHD >= '1/1/2007' and NgHD <= '31/1/2007')
-order by NgHD asc, TriGia desc;
-
--- Cau 8
-select hd.MaKH, kh.HoTen from HoaDon hd join KhachHang kh on kh.MaKH = hd.MaKH;
-
--- Cau 9
-select hd.SoHD, nv.HoTen from HoaDon hd join NhanVien nv on nv.MaNV = hd.MaNV where nv.HoTen = 'Nguyen Van A';
-
--- Cau 10
-select c.MaSP, sp.TenSp from HoaDon hd join CTHD c on c.SoHD = hd.SoHD join SanPham sp on sp.MaSP = c.MaSP
-join KhachHang kh on kh.MaKH = hd.MaKH
-where kh.HoTen = 'Nguyen Van A' and (hd.NgHD >= '1/10/2006' and hd.NgHD <= '31/10/2006');
-
--- Cau 11
-select hd.SoHD from HoaDon hd join CTHD c on c.SoHD = hd.SoHD join SanPham sp on sp.SoHD = c.SoHD
-where sp.MaSP in ('BB01', 'BB02');
-
--- Cau 12
+--  12. Tìm các số hóa đơn đã mua sản phẩm có mã số “BB01” hoặc “BB02”, mỗi sản phẩm mua với số lượng từ 10 đến 20.
 SELECT
   r.*
 from
@@ -124,12 +263,26 @@ from
       )
   ) r
 
-
--- Cau 13
-  SELECT
-    r.*
-  from
+--  13. Tìm các số hóa đơn mua cùng lúc 2 sản phẩm có mã số “BB01” và “BB02”, mỗi sản phẩm mua với số lượng từ 10 đến 20.
+SELECT
+  r.*
+from
+  (
     (
+      select
+        hd.SoHD
+      from
+        HoaDon hd
+        join CTHD c on c.SoHD = hd.SoHD
+        join SanPham sp on sp.MASP = c.MASP
+      where
+        sp.MaSP = 'BB01'
+        and (
+          c.SL between 10
+          and 20
+        )
+    )
+    intersect
       (
         select
           hd.SoHD
@@ -138,30 +291,15 @@ from
           join CTHD c on c.SoHD = hd.SoHD
           join SanPham sp on sp.MASP = c.MASP
         where
-          sp.MaSP = 'BB01'
+          sp.MaSP = 'BB02'
           and (
             c.SL between 10
             and 20
           )
       )
-      intersect
-        (
-          select
-            hd.SoHD
-          from
-            HoaDon hd
-            join CTHD c on c.SoHD = hd.SoHD
-            join SanPham sp on sp.MASP = c.MASP
-          where
-            sp.MaSP = 'BB02'
-            and (
-              c.SL between 10
-              and 20
-            )
-        )
-    ) r
+  ) r
 
--- Cau 14
+--  14. In ra danh sách các sản phẩm (MASP,TENSP) do “Trung Quoc” sản xuất hoặc các sản phẩm được bán ra trong ngày 1/1/2007.
 select
   r.*
 from
@@ -185,33 +323,34 @@ from
           join CTHD c on c.SoHD = hd.SoHD
           join SanPham sp on c.MaSP = sp.MASP
         where
-          hd.NgHD = '1/1/2007'
+          hd.NgHD = '2007-01-01'
       )
   ) r
 
--- Cau 15
+--  15. In ra danh sách các sản phẩm (MASP,TENSP) không bán được.
 select
   r.*
 from
-  ((
-    select
-      sp.MaSP,
-      sp.TenSP
-    from
-      SanPham sp
-  )
-except
   (
-    select
-      sp1.MaSP,
-      sp1.TenSP
-    from
-      SanPham sp1
-      join CTHD c1 on c1.MaSP = sp1.MaSP
-  )) r
+    (
+      select
+        sp.MaSP,
+        sp.TenSP
+      from
+        SanPham sp
+    )
+    except
+      (
+        select
+          sp1.MaSP,
+          sp1.TenSP
+        from
+          SanPham sp1
+          join CTHD c1 on c1.MaSP = sp1.MaSP
+      )
+  ) r
 
-
---  Cau 16
+--  16. In ra danh sách các sản phẩm (MASP,TENSP) không bán được trong năm 2006.
 select
   r.*
 from
@@ -233,12 +372,11 @@ from
           join CTHD c1 on c1.MaSP = sp1.MaSP
           join HoaDon hd1 on hd1.SoHD = c1.SoHD
         where
-          hd1.NgHD between '1/1/2006'
-          and '31/12/2006'
+          YEAR(hd1.NGHD) = 2006
       )
   ) r
 
--- Cau 17
+-- 17. In ra danh sách các sản phẩm (MASP,TENSP) do “Trung Quoc” sản xuất không bán được trong năm 2006.
 select
   r.*
 from
@@ -263,58 +401,6 @@ from
           join HoaDon hd1 on hd1.SoHD = c1.SoHD
         where
           sp1.NuocSX = 'Trung Quoc'
-          and (
-            hd1.NgHD between '1/1/2006'
-            and '31/12/2006'
-          )
+          and  YEAR(hd1.NGHD) = 2006
       )
   ) r
-
--- Cau 18
-select
-  r.*
-from
-  (
-    select
-      hd.SoHD
-    from
-      HOADON hd
-      join CTHD c on c.SOHD = hd.SoHD
-      join SANPHAM sp on sp.MaSp = c.MaSp
-    where
-      sp.MaSp in (
-        select
-          sp1.Masp
-        from
-          SANPHAM sp1
-        where
-          sp1.NuocSX = 'Singapore'
-      )
-  ) r
-
--- cau 19:
-SELECT
-  DISTINCT hd.SOHD
-FROM
-  HoaDon hd
-  INNER JOIN CTHD ct ON hd.SOHD = ct.SOHD
-  INNER JOIN SanPham sp ON ct.MaSP = sp.MaSP
-WHERE
-  hd.NGHD BETWEEN '01/01/2006'
-  AND '31/12/2006'
-  AND sp.NUOCSX = 'Singapore'
-GROUP BY
-  hd.SOHD
-HAVING
-  COUNT(ct.MaSP) = (
-    SELECT
-      count(sp1.MASP)
-    FROM
-      SanPham sp1
-    WHERE
-      sp1.NuocSX = 'Singapore'
-  );
-
-
-
-
